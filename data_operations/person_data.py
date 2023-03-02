@@ -104,9 +104,3 @@ if __name__ == '__main__':
             logging.warning(f'{e}')
         #  specified_time (datetime.now() + interval) < datetime.now() as interval instead of sleep
         sleep(fetch_interval)
-
-
-    
-
-
-    
