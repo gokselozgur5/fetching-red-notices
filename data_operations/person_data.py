@@ -16,8 +16,14 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(me
                     handlers=[RotatingFileHandler(log_file, maxBytes=log_max_size, backupCount=log_backup_count)])
 
 #  Loading info from configuration file
-dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
-load_dotenv(dotenv_path)
+try:
+    dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+    load_dotenv(dotenv_path)
+    logging.debug(f'{__name__} is started.')
+except Exception as e:
+    # exception object might be more specific
+    logging.error(f'environment file could not be loaded! \n{e}')
+
 
 class RabbitMQClient:
     """A RabbitMQ client that encapsulates the connection and channel"""
@@ -30,7 +36,6 @@ class RabbitMQClient:
         self.password = os.getenv('RABBITMQ_PASSWORD')
         self.virtual_host = os.getenv('RABBITMQ_VIRTUAL_HOST')
         self.queue_name = os.getenv('RABBITMQ_QUEUE_NAME')
-        print('queue name', self.queue_name)
 
         self.credentials = pika.PlainCredentials(self.username, self.password)
         self.parameters = pika.ConnectionParameters(self.host,
@@ -56,10 +61,13 @@ class RabbitMQClient:
         """Send a message to the RabbitMQ server"""
         try:
             self.connect()
+            logging.debug('Connection is created')
             self.channel.basic_publish(exchange='',
                                         routing_key=self.queue_name,
                                         body=message)
-        except pika.exceptions.AMQPError:
+            logging.debug('Publish operation is done.')
+        except pika.exceptions.AMQPError as p:
+            logging.error(f'Error while trying to make a connection \n{p}')
             self.connection.close()
             self.channel = None
 
@@ -74,33 +82,43 @@ def fetch_data():
         'page': start_page,
     }
     headers = {}
-    response = requests.request("GET", api_url, headers=headers, params=params)
-    if response.ok:
-        data = response.json()
-        total_page_url = data['_links']['last']['href']
-        records = {}
-        records[start_page]= data['_embedded']['notices']
-        parsed_url = urlparse(total_page_url)
-        query_params = parse_qs(parsed_url.query)
-        total_page_number = int(query_params['page'][0])
-        for i in range(start_page + 1, total_page_number + 1):
-            response = requests.request("GET", api_url, headers=headers, params=params)
-            records[i]= data['_embedded']['notices']
-        print(type(records))
-        record_data = json.dumps(records)
-        return record_data
+    try:
+        logging.debug('Fetching data is started.')
+        response = requests.request("GET", api_url, headers=headers, params=params)
+        if response.ok:
+            logging.debug('Fetch operation is successful.')
+            data = response.json()
+            total_page_url = data['_links']['last']['href']
+            records = {}
+            records[start_page]= data['_embedded']['notices']
+            parsed_url = urlparse(total_page_url)
+            query_params = parse_qs(parsed_url.query)
+            total_page_number = int(query_params['page'][0])
+            for i in range(start_page + 1, total_page_number + 1):
+                response = requests.request("GET", api_url, headers=headers, params=params)
+                records[i]= data['_embedded']['notices']
+            print(type(records))
+            record_data = json.dumps(records)
+            return record_data
+    except Exception as e:
+        #  Exceptions can be specified instead of Exception
+        logging.error(f'{e}')
 
 
 if __name__ == '__main__':
 
     client = RabbitMQClient()
+    logging.debug('Client is initiated.')
     fetch_interval = int(os.getenv('FETCH_INTERVAL_SECONDS'))
 
     while True:
         try:
             records = fetch_data()
             client.send_message(records)
+            logging.debug('Datas sent to queue')
+        #  Might be declared specific exceptions insted of Exception
         except Exception as e:
             logging.warning(f'{e}')
         #  specified_time (datetime.now() + interval) < datetime.now() as interval instead of sleep
+        logging.debug('Interval time... Waiting...')
         sleep(fetch_interval)
