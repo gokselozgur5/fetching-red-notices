@@ -1,0 +1,8 @@
+# For configuration file
+PyYaml==5.1
+
+# For http requests
+requests==2.26.0
+
+# For rabbitmq messaging
+pika==1.3.1
