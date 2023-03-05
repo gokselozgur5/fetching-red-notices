@@ -15,6 +15,7 @@ log_backup_count = 5  # Keep up to 5 backup files
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s',
                     handlers=[RotatingFileHandler(log_file, maxBytes=log_max_size, backupCount=log_backup_count)])
 
+
 #  Loading info from configuration file
 try:
     dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -36,7 +37,6 @@ class RabbitMQClient:
         self.password = os.getenv('RABBITMQ_PASSWORD')
         self.virtual_host = os.getenv('RABBITMQ_VIRTUAL_HOST')
         self.queue_name = os.getenv('RABBITMQ_QUEUE_NAME')
-
         self.credentials = pika.PlainCredentials(self.username, self.password)
         self.parameters = pika.ConnectionParameters(self.host,
                                                      self.port,
