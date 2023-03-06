@@ -15,5 +15,5 @@ COPY /web_service .
 EXPOSE 8000
 
 # Start the application when the container starts
-CMD ["/usr/local/bin/uvicorn", "web_manager:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["python3", "web_manager.py"]
+# CMD ["/usr/local/bin/uvicorn", "web_manager:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/usr/local/bin/python3", "web_manager.py"]
