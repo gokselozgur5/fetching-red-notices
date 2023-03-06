@@ -5,6 +5,7 @@ import pika
 import os
 from dotenv import load_dotenv
 import logging
+import uvicorn
 
 try:
     dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -27,7 +28,7 @@ class RabbitMQConsumer:
         self.parameters = pika.ConnectionParameters(self.host,
                                                      self.port,
                                                      self.virtual_host,
-                                                     self.credentials)
+                                                     self.credentials, heartbeat=50)
         self.connection = None
         self.channel = None
 
@@ -36,6 +37,7 @@ class RabbitMQConsumer:
         if not self.connection or self.connection.is_closed:
             self.connection = pika.BlockingConnection(self.parameters)
             self.create_channel()
+            print('baglandim')
 
     def create_channel(self):
         """Create a new channel on the existing connection"""
@@ -55,6 +57,11 @@ class RabbitMQConsumer:
 
 app = FastAPI()
 templates = Jinja2Templates(directory="./templates")
+consumer = RabbitMQConsumer()
+
+@app.on_event("startup")
+async def startup():
+    consumer.consume(callback)
 
 @app.post('/api/v1/red-notices-list')
 async def post_data(data_list: dict):
@@ -65,9 +72,7 @@ async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "title": f"Red Notices List {request}"})
 
 def callback(ch, method, properties, body):
-    print("Received message:", body)
+    print("Received message:", 'hehe')
 
-if __name__ == '__main__':
-    consumer = RabbitMQConsumer()
-    consumer.consume(callback)
-    consumer.close()
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
