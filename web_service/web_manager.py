@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 import logging
 import uvicorn
+from db_operations import DatabaseManager
 
 try:
     dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -59,20 +60,25 @@ app = FastAPI()
 templates = Jinja2Templates(directory="./templates")
 consumer = RabbitMQConsumer()
 
+# Create a DatabaseManager instance and insert the list into the database
+manager = DatabaseManager()
+
 @app.on_event("startup")
 async def startup():
     consumer.consume(callback)
 
-@app.post('/api/v1/red-notices-list')
-async def post_data(data_list: dict):
-    return data_list
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "title": f"Red Notices List {request}"})
 
+
 def callback(ch, method, properties, body):
     print("Received message:", 'hehe')
+    print(type(body))
+    manager.insert_list_to_table(body)
+
+    
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
