@@ -41,7 +41,7 @@ class RabbitMQClient:
         self.parameters = pika.ConnectionParameters(self.host,
                                                      self.port,
                                                      self.virtual_host,
-                                                     self.credentials)
+                                                     self.credentials, heartbeat=50)
         self.connection = None
         self.channel = None
         self.connect()
@@ -97,7 +97,6 @@ def fetch_data():
             for i in range(start_page + 1, total_page_number + 1):
                 response = requests.request("GET", api_url, headers=headers, params=params)
                 records[i]= data['_embedded']['notices']
-            print(type(records))
             record_data = json.dumps(records)
             return record_data
     except Exception as e:
@@ -115,6 +114,7 @@ if __name__ == '__main__':
         try:
             records = fetch_data()
             client.send_message(records)
+            print('sent data to queue')
             logging.debug('Datas sent to queue')
         #  Might be declared specific exceptions insted of Exception
         except Exception as e:
