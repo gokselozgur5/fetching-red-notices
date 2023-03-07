@@ -1,9 +1,12 @@
 # Red Notices Data Fetcher
-This repository provides a Python script for fetching data about red notices from the Interpol's public API. Red notices are international wanted notices issued by Interpol to alert law enforcement agencies around the world about individuals who are wanted for extradition or prosecution.
-Project Title
 
-This project is a sample FastAPI application that consumes messages from a RabbitMQ queue and stores them in a PostgreSQL database. The application can be run using Docker Compose to set up the required services.
-Table of Contents
+Red Notices Data Fetcher is a Python application that fetches the red notices data from the Interpol API, then sends it to RabbitMQ message queue and stores it in a PostgreSQL database. It uses the aio_pika and SQLAlchemy libraries to interact with RabbitMQ and PostgreSQL, respectively. The application is designed to be run as a Docker container and can be deployed using Docker Compose.
+
+The application consumes messages from a RabbitMQ message queue using an asynchronous consumer, processes the messages and stores the data in a PostgreSQL database using SQLAlchemy. The application has an HTTP server implemented using FastAPI that serves a basic HTML page with a template engine for rendering dynamic content.
+
+The application also includes functionality to compare the data that has been consumed from RabbitMQ with the data that is stored in the PostgreSQL database. It uses a delta database to store the differences between the two datasets, and provides an API endpoint to retrieve the delta dataset.
+
+The Red Notices Data Fetcher application is designed to be easily customizable and extendable. The user can modify the RabbitMQ queue name, PostgreSQL database configuration, and HTML template files to suit their needs.
 
 # Table of Contents
 1. [Getting Started](#getting-started)
