@@ -5,7 +5,7 @@ FROM python:3.9-slim-buster
 WORKDIR /data_operations
 
 # Copy the requirements file into the container and install the dependencies
-COPY ../requirements.txt .
+COPY ./requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
