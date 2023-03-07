@@ -1,12 +1,16 @@
-from fastapi import FastAPI, Request
+import asyncio
+import json
+from time import sleep
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-import pika 
+import aio_pika
 import os
 from dotenv import load_dotenv
 import logging
 import uvicorn
 from db_operations import DatabaseManager
+import pika
 
 try:
     dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -16,56 +20,60 @@ except Exception as e:
     logging.error(f'environment file could not be loaded! \n{e}')
 
 
-class RabbitMQConsumer:
-    def __init__(self):
-        self.host = os.getenv('RABBITMQ_HOST')
-        self.port = os.getenv('RABBITMQ_PORT')
-        self.username = os.getenv('RABBITMQ_USERNAME')
-        self.password = os.getenv('RABBITMQ_PASSWORD')
-        self.virtual_host = os.getenv('RABBITMQ_VIRTUAL_HOST')
-        self.queue_name = os.getenv('RABBITMQ_QUEUE_NAME')
 
-        self.credentials = pika.PlainCredentials(self.username, self.password)
-        self.parameters = pika.ConnectionParameters(self.host,
-                                                     self.port,
-                                                     self.virtual_host,
-                                                     self.credentials, heartbeat=50)
-        self.connection = None
-        self.channel = None
 
-    def connect(self):
-        """Establish a connection to the RabbitMQ server"""
-        if not self.connection or self.connection.is_closed:
-            self.connection = pika.BlockingConnection(self.parameters)
-            self.create_channel()
-            print('baglandim')
+async def consume_messages() -> None:
+    logging.basicConfig(level=logging.DEBUG)
+    connection = await aio_pika.connect_robust(
+        "amqp://guest:guest@rabbitmq:5672//", virtualhost='/'
+    )
 
-    def create_channel(self):
-        """Create a new channel on the existing connection"""
-        self.channel = self.connection.channel()
-        self.channel.queue_declare(queue=self.queue_name)
+    queue_name = "red-notices-queue"
 
-    def consume(self, callback):
-        """Consume messages from the RabbitMQ server"""
-        self.connect()
-        self.channel.basic_consume(queue=self.queue_name, on_message_callback=callback, auto_ack=True)
-        self.channel.start_consuming()
+    async with connection:
+        # Creating channel
+        channel = await connection.channel()
 
-    def close(self):
-        """Close the connection to the RabbitMQ server"""
-        if self.connection and self.connection.is_open:
-            self.connection.close()
+        # Will take no more than 10 messages in advance
+        await channel.set_qos(prefetch_count=10)
+
+        # Declaring queue
+        queue = await channel.declare_queue(queue_name)
+
+        async with queue.iterator() as queue_iter:
+            async for message in queue_iter:
+                async with message.process():
+                    logging.debug(f"{type(message.body)}--------------heheeeeey")
+                    convert_byte = message.body.decode('utf8').replace("'", '"')
+                    json_data = json.loads(convert_byte)
+                    dump_data = json.dumps(json_data, indent=2, sort_keys=True)
+                    
+                    
+                    # Create a DatabaseManager instance and insert the list into the database
+                    manager = DatabaseManager()
+
+                    db_test = manager.insert_list_to_table(dump_data)
+                    logging.debug(f'{db_test}')
+                    message.ack()
+                    
+
+
+                    if queue.name in message.body.decode():
+                        break
+
 
 app = FastAPI()
 templates = Jinja2Templates(directory="./templates")
-consumer = RabbitMQConsumer()
 
-# Create a DatabaseManager instance and insert the list into the database
-manager = DatabaseManager()
+
+# queue = asyncio.Queue()
+# consumer = RabbitMQConsumer(queue=queue)
+
+
 
 @app.on_event("startup")
 async def startup():
-    consumer.consume(callback)
+    app.consumer_task = asyncio.create_task(consume_messages())
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -75,10 +83,14 @@ async def read_root(request: Request):
 
 def callback(ch, method, properties, body):
     print("Received message:", 'hehe')
-    print(type(body))
-    manager.insert_list_to_table(body)
-
+    print('hehehehehehehehehehe')
+    
+    data = json.loads(convert_byte)
+    dump_data = json.dumps(data, indent=4, sort_keys=True)
+    print('hohohoho')
     
 
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    uvicorn.run(app, host="0.0.0.0", port=8001)
