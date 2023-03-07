@@ -4,7 +4,7 @@ from sqlalchemy import JSON, create_engine, Column, Integer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import os
-
+logging.basicConfig(level=logging.DEBUG)
 try:
     dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
     load_dotenv(dotenv_path)
@@ -43,9 +43,9 @@ class DatabaseManager:
 
     def insert_list_to_table(self, my_list):
         with self.Session() as session:
-            for item in my_list:
-                record = MyTable(name=item['name'], age=item['age'])
-                session.add(record)
+            record = MyTable(data=my_list)
+            session.add(record)
             session.commit()
+            session.refresh(record)
 
 
