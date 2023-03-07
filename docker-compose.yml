@@ -7,9 +7,9 @@ services:
     ports:
         - 5672:5672
         - 15672:15672
-    volumes:
-        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
-        - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    # volumes:
+    #     - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+    #     - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
@@ -23,6 +23,8 @@ services:
     build:
       context: .
       dockerfile: data_operations/fetch_operations.dockerfile
+    # with this way no need to build when the code changes
+
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -40,7 +42,7 @@ services:
         condition: service_healthy
     container_name: 'web-services'
     ports:
-      - "8000:8000"
+      - "8001:8001"
     env_file:
       - .env
     networks:
