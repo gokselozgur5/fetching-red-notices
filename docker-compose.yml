@@ -1,6 +1,7 @@
 version: "3.2"
 services:
   rabbitmq:
+    platform: linux/amd64
     image: rabbitmq:3-management-alpine
     restart: always
     container_name: 'rabbitmq'
@@ -20,11 +21,13 @@ services:
     env_file:
       - .env
   data_operations:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: data_operations/fetch_operations.dockerfile
-    # with this way no need to build when the code changes
-
+    # with this way no need to build compose again after changes in codes
+    volumes:
+      - ./data_operations:/data_operations
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -34,6 +37,7 @@ services:
     networks:
       - frn_network
   web-services:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: ./web_service/webservice.dockerfile
@@ -41,6 +45,9 @@ services:
       rabbitmq:
         condition: service_healthy
     container_name: 'web-services'
+    volumes:
+      - ./web_service:/web_service
+
     ports:
       - "8001:8001"
     env_file:
@@ -48,6 +55,7 @@ services:
     networks:
       - frn_network
   db:
+    platform: linux/amd64
     image: postgres:15.2-alpine
     container_name: 'postgredb'
     restart: always
