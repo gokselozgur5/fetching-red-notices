@@ -39,9 +39,9 @@ class RabbitMQClient:
         self.queue_name = os.getenv('RABBITMQ_QUEUE_NAME')
         self.credentials = pika.PlainCredentials(self.username, self.password)
         self.parameters = pika.ConnectionParameters(self.host,
-                                                     self.port,
-                                                     self.virtual_host,
-                                                     self.credentials)
+                                                    self.port,
+                                                    self.virtual_host,
+                                                    self.credentials, heartbeat=50)
         self.connection = None
         self.channel = None
         self.connect()
@@ -63,8 +63,8 @@ class RabbitMQClient:
             self.connect()
             logging.debug('Connection is created')
             self.channel.basic_publish(exchange='',
-                                        routing_key=self.queue_name,
-                                        body=message)
+                                       routing_key=self.queue_name,
+                                       body=message)
             logging.debug('Publish operation is done.')
         except pika.exceptions.AMQPError as p:
             logging.error(f'Error while trying to make a connection \n{p}')
@@ -77,7 +77,7 @@ def fetch_data():
     api_url = "https://ws-public.interpol.int/notices/v1/red"
     start_page = 1
     result_per_page = 100
-    params={
+    params = {
         'resultPerPage': result_per_page,
         'page': start_page,
     }
@@ -90,14 +90,13 @@ def fetch_data():
             data = response.json()
             total_page_url = data['_links']['last']['href']
             records = {}
-            records[start_page]= data['_embedded']['notices']
+            records[start_page] = data['_embedded']['notices']
             parsed_url = urlparse(total_page_url)
             query_params = parse_qs(parsed_url.query)
             total_page_number = int(query_params['page'][0])
             for i in range(start_page + 1, total_page_number + 1):
                 response = requests.request("GET", api_url, headers=headers, params=params)
                 records[i]= data['_embedded']['notices']
-            print(type(records))
             record_data = json.dumps(records)
             return record_data
     except Exception as e:
@@ -115,6 +114,7 @@ if __name__ == '__main__':
         try:
             records = fetch_data()
             client.send_message(records)
+            print('sent data to queue')
             logging.debug('Datas sent to queue')
         #  Might be declared specific exceptions insted of Exception
         except Exception as e:

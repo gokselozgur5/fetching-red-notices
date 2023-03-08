@@ -1,0 +1,64 @@
+version: "3.2"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: always
+    container_name: 'rabbitmq'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    # volumes:
+    #     - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+    #     - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+        - frn_network
+    env_file:
+      - .env
+  data_operations:
+    build:
+      context: .
+      dockerfile: data_operations/fetch_operations.dockerfile
+    # with this way no need to build when the code changes
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    container_name: 'fetch_service'
+    env_file:
+      - .env
+    networks:
+      - frn_network
+  web-services:
+    build:
+      context: .
+      dockerfile: ./web_service/webservice.dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    container_name: 'web-services'
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    networks:
+      - frn_network
+  db:
+    image: postgres:15.2-alpine
+    container_name: 'postgredb'
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    networks:
+      - frn_network
+      
+networks:
+  frn_network:
+    driver: bridge
