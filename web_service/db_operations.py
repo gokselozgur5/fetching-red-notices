@@ -4,7 +4,11 @@ from sqlalchemy import JSON, create_engine, Column, Integer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import os
+
+
 logging.basicConfig(level=logging.DEBUG)
+
+
 try:
     dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
     load_dotenv(dotenv_path)
@@ -29,6 +33,7 @@ Session = sessionmaker(bind=engine)
 # Define a database model
 Base = declarative_base()
 
+
 class MyTable(Base):
     __tablename__ = db_name
     id = Column(Integer, primary_key=True)
@@ -36,16 +41,22 @@ class MyTable(Base):
 
 
 class DatabaseManager:
+
     def __init__(self):
         self.engine = create_engine(db_uri)
         self.Session = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
-    def insert_list_to_table(self, my_list):
+    def insert_list_to_table(self, my_list) -> None:
         with self.Session() as session:
             record = MyTable(data=my_list)
             session.add(record)
             session.commit()
             session.refresh(record)
 
+    def get_items_from_table(self) -> list:
+        with self.Session() as session:
+            items = session.query(MyTable).all()
+            item_list = [item.item for item in items]
+            return item_list
 

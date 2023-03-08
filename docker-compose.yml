@@ -23,8 +23,9 @@ services:
     build:
       context: .
       dockerfile: data_operations/fetch_operations.dockerfile
-    # with this way no need to build when the code changes
-
+    # with this way no need to build compose again after changes in codes
+    volumes:
+      - ./data_operations:/data_operations
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -41,6 +42,9 @@ services:
       rabbitmq:
         condition: service_healthy
     container_name: 'web-services'
+    volumes:
+      - ./web_service:/web_service
+
     ports:
       - "8001:8001"
     env_file:
@@ -58,7 +62,7 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
     networks:
       - frn_network
-      
+
 networks:
   frn_network:
     driver: bridge
