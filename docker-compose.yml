@@ -1,7 +1,6 @@
 version: "3.2"
 services:
   rabbitmq:
-    platform: linux/amd64
     image: rabbitmq:3-management-alpine
     restart: always
     container_name: 'rabbitmq'
@@ -21,7 +20,6 @@ services:
     env_file:
       - .env
   data_operations:
-    platform: linux/amd64
     build:
       context: .
       dockerfile: data_operations/fetch_operations.dockerfile
@@ -37,7 +35,6 @@ services:
     networks:
       - frn_network
   web-services:
-    platform: linux/amd64
     build:
       context: .
       dockerfile: ./web_service/webservice.dockerfile
@@ -55,7 +52,6 @@ services:
     networks:
       - frn_network
   db:
-    platform: linux/amd64
     image: postgres:15.2-alpine
     container_name: 'postgredb'
     restart: always
@@ -66,7 +62,7 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
     networks:
       - frn_network
-      
+
 networks:
   frn_network:
     driver: bridge
