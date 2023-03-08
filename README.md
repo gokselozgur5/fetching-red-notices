@@ -6,7 +6,7 @@ The application consumes messages from a RabbitMQ message queue using an asynchr
 
 The application also includes functionality to compare the data that has been consumed from RabbitMQ with the data that is stored in the PostgreSQL database. It uses a delta database to store the differences between the two datasets, and provides an API endpoint to retrieve the delta dataset.
 
-The Red Notices Data Fetcher application is designed to be easily customizable and extendable. The user can modify the RabbitMQ queue name, PostgreSQL database configuration, and HTML template files to suit their needs.
+The Red Notices Data Fetcher application is designed to be easily customizable and extendable. To Be Continued...
 
 # Table of Contents
 1. [Getting Started](#getting-started)
